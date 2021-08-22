@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <script src="https://cdn.staticfile.org/vue/2.6.11/vue.min.js"></script>
+</head>
+
+<body>
+
+  <div id="app">
+    <div v-if="isShow">
+      昵称：<input type="text" v-model="name"><br />
+      房间号：<input type="text" v-model="roomid"><br />
+      <button type="button" @click="enter()">进入聊天室</button>
+    </div>
+    <div v-else>
+      <ul>
+        <li v-for="(item,index) in list" :key="index">{{item}}</li>
+      </ul>
+      <span>在线人数{{num}}</span>
+      <div class="crl">
+        <input type="text" v-model="value">
+        <button @click="send">发送</button>
+        <button @click="close">关闭链接 </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    var vm = new Vue({
+      el: "#app",
+      data: {
+        list: [],
+        value: '',
+        name: '',
+        roomid: '',
+        num: 0,
+        isShow: true
+      },
+      created() {
+        this.ws = new WebSocket('ws://127.0.0.1:3000')
+        this.ws.onopen = this.onopen
+        this.ws.onmessage = this.onmessage
+        this.ws.onclose = this.onclose
+        this.ws.onerror = this.onerror
+      },
+      methods: {
+        enter() {
+          if (!this.name) {
+            alert('昵称不能为空')
+            return
+          }
+          if (!this.roomid) {
+            alert('房间号不能为空')
+            return
+          }
+          this.isShow = false
+          this.list.push(`欢迎${this.name}加入聊天室`)
+          this.ws.send(JSON.stringify({
+            event: 'enter',
+            message: {
+              name: this.name,
+              roomid: this.roomid
+            }
+          }))
+        },
+        onopen() {
+          console.log('open:' + this.ws.readyState)
+          // this.ws.send('hello from client')
+        },
+        onmessage(msg) {
+          if (this.isShow) return
+          let data = JSON.parse(msg.data)
+          this.num = data.num
+          if (data.event === 'message') {
+            // this.list.push(data.message)
+            if (data.name != this.name) {
+              this.list.push(`${data.name}:${data.message}`)
+            }
+          } else if (data.event === 'enter') {
+            if (data.name != this.name) {
+              this.list.push(`欢迎${data.name}加入聊天室`)
+            }
+          } else if (data.event === 'out') {
+            if (data.name) {
+              this.list.push(`${data.name}用户已经离开了聊天室`)
+            }
+          }
+        },
+        onclose() {
+          // 当链接主动断开的时候触发close事件
+          console.log('close:' + this.ws.readyState)
+          console.log('已关闭websocket')
+        },
+        onerror() {
+          // 当链接失败时触发error事件
+          console.log('error:' + this.ws.readyState)
+          console.log('websocket链接失败')
+        },
+        close() {
+          this.ws.close()
+        },
+        send() {
+          // this.list.push(this.value)
+          this.list.push(`${this.name}:${this.value}`)
+          this.ws.send(JSON.stringify({
+            event: 'message',
+            message: this.value
+          }))
+          this.value = ''
+        }
+      }
+    })
+  </script>
+</body>
+
+</html>
