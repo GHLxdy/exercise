@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <textarea id="textarea" cols="20" rows="20"></textarea>
+
+  <button onclick="send()">提交</button>
+</body>
+<script type="text/javascript">
+  var sharedworker = new SharedWorker('worker.js')
+  sharedworker.port.start()
+
+  function send() {
+    if (textarea.value) {
+      sharedworker.port.postMessage(textarea.value)
+    }
+  }
+</script>
+
+</html>
